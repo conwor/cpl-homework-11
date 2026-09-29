@@ -7,6 +7,7 @@ MAIN_FLAGS = -std=c99 -g -O0
 WARNINGS_FLAGS = -Wall -Wextra -Wpedantic -Wduplicated-branches -Wduplicated-cond -Wcast-qual -Wconversion -Wsign-conversion -Wlogical-op -Werror
 SANITIZER_FLAGS = -fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=leak -fsanitize=undefined -fsanitize-address-use-after-scope
 FLAGS = $(MAIN_FLAGS) $(WARNINGS_FLAGS) $(SANITIZER_FLAGS)
+SHELL=/bin/bash -o pipefail
 
 # Sources and headers
 SOURCES = $(wildcard ./*.c)
@@ -31,7 +32,7 @@ all: clean-before test clean-after
 
 $(FORMATTED_FILES): %.formatted: %
 	@clang-format --style=file $* > $*.formatted
-	diff $* $*.formatted
+	diff -u $* $*.formatted | cat -A
 
 $(EXE_32): $(FORMATTED_FILES)
 	@rm -f $(FORMATTED_FILES)
@@ -45,9 +46,9 @@ $(PASS): %.passed: %-input.txt %-expected.txt $(EXE_32) $(EXE_64)
 	@echo "Running test $*..."
 	@rm -f $@
 	./$(EXE_32) < $*-input.txt 1> $*-actual-32.txt 2>&1
-	diff $*-expected.txt $*-actual-32.txt
+	diff -u $*-expected.txt $*-actual-32.txt | cat -A
 	./$(EXE_64) < $*-input.txt 1> $*-actual-64.txt 2>&1
-	diff $*-expected.txt $*-actual-64.txt
+	diff -u $*-expected.txt $*-actual-64.txt | cat -A
 	@touch $@
 
 test: $(PASS)
